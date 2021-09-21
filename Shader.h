@@ -32,12 +32,12 @@ public:
 	{
 		/* Cleanup all the things we bound and allocated */
 		glUseProgram(0);
-		glDetachShader(shaderProgram, vertexshader);
+		glDetachShader(shaderProgram, vertexShader);
 		glDetachShader(shaderProgram, fragmentShader);
 
 		glDeleteProgram(shaderProgram);
 
-		glDeleteShader(vertexshader);
+		glDeleteShader(vertexShader);
 		glDeleteShader(fragmentShader);
 	}
 	
@@ -52,10 +52,10 @@ private:
 	{
 		shaderProgram = glCreateProgram();
 
-		if (!LoadVertexShader("tutorial2.vert"))
+		if (!LoadVertexShader("../tutorial2.vert"))
 			return false;
 
-		if (!LoadFragmentShader("tutorial2.frag"))
+		if (!LoadFragmentShader("../tutorial2.frag"))
 			return false;
 
 		return LinkShaders();
@@ -89,24 +89,24 @@ private:
 		GLint size = (GLint)str.length();
 
 		// Create an empty vertex shader handle
-		vertexshader = glCreateShader(GL_VERTEX_SHADER);
+		vertexShader = glCreateShader(GL_VERTEX_SHADER);
 
 		// Send the vertex shader source code to OpenGL
-		glShaderSource(vertexshader, 1, &src, &size);
+		glShaderSource(vertexShader, 1, &src, &size);
 
 		// Compile the vertex shader
-		glCompileShader(vertexshader);
+		glCompileShader(vertexShader);
 
 		int wasCompiled = 0;
-		glGetShaderiv(vertexshader, GL_COMPILE_STATUS, &wasCompiled);
+		glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &wasCompiled);
 
 		if (wasCompiled == 0)
 		{
-			PrintShaderCompilationErrorInfo(vertexshader);
+			PrintShaderCompilationErrorInfo(vertexShader);
 			return false;
 		}
 
-		glAttachShader(shaderProgram, vertexshader);
+		glAttachShader(shaderProgram, vertexShader);
 		return true;
 	}
 
@@ -204,6 +204,6 @@ private:
 	}
 
 	GLuint shaderProgram;
-	GLuint vertexshader, fragmentShader;
+	GLuint vertexShader, fragmentShader;
 
 };

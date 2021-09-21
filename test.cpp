@@ -18,10 +18,13 @@
 #include <stdio.h>
 #include "Shader.h"
 #include "Model.h"
+#include "GraphicsContext.h"
 #include "ShapeGenerator.h"
 #include <glm/mat4x4.hpp> 
 #include <glm/gtc/matrix_transform.hpp> 
 #include <glm/gtc/quaternion.hpp>
+
+#include "DispmanCapture.h"
 
 #define EXIT(msg)           \
     {                       \
@@ -60,7 +63,8 @@ static EGLint attributes[] =
         EGL_GREEN_SIZE, 8,
         EGL_BLUE_SIZE, 8,
         EGL_ALPHA_SIZE, 0,
-        EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
+        EGL_RENDERABLE_TYPE,
+        EGL_OPENGL_ES2_BIT,
         EGL_NONE
     };
 
@@ -73,7 +77,6 @@ static const EGLint context_attribs[] =
 struct gbm_bo *bo;
 uint32_t handle;
 uint32_t pitch;
-int32_t fb;
 uint64_t modifier;
 
 static drmModeConnector *find_connector(drmModeRes *resources)
@@ -104,7 +107,7 @@ static drmModeEncoder *find_encoder(drmModeRes *resources, drmModeConnector *con
 
 static void swap_buffers()
 {
-
+    uint32_t fb;
     eglSwapBuffers(display, egl_surface);
     bo = gbm_surface_lock_front_buffer(gbm_surface);
     handle = gbm_bo_get_handle(bo).u32;
@@ -156,29 +159,38 @@ void Render(Model &m)
 
 int main()
 {
-    device = open("/dev/dri/card1", O_RDWR);
-    resources = drmModeGetResources(device);
+    DispmanCapture dispman = DispmanCapture();
+
+    try{
+        GraphicsContext gfx;
+    } catch (const std::runtime_error& e) {
+        std::cout << e.what() << '\n';
+    }
+
+/*
+    drmDeviceFd = open("/dev/dri/card1", O_RDWR);
+    resources = drmModeGetResources(drmDeviceFd);
     connector = find_connector(resources);
-    connector_id = connector->connector_id;
-    mode_info = connector->modes[0];
+    connectorId = connector->connectorId;
+    modeInfo = connector->modes[0];
     encoder = find_encoder(resources, connector);
-    crtc = drmModeGetCrtc(device, encoder->crtc_id);
+    crtc = drmModeGetCrtc(drmDeviceFd, encoder->crtc_id);
     drmModeFreeEncoder(encoder);
     drmModeFreeConnector(connector);
     drmModeFreeResources(resources);
-    gbm_device = gbm_create_device(device);
-    gbm_surface = gbm_surface_create(gbm_device, mode_info.hdisplay, mode_info.vdisplay, GBM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-    display = eglGetDisplay(gbm_device);
-    eglInitialize(display, NULL, NULL);
+    gbmDevice = gbm_create_device(drmDeviceFd);
+    gbmSurface = gbm_surface_create(gbmDevice, modeInfo.hdisplay, modeInfo.vdisplay, GBM_FORMAT_XRGB8888, GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+    eglDisplay = eglGetDisplay(gbmDevice);
+    eglInitialize(eglDisplay, NULL, NULL);
     eglBindAPI(EGL_OPENGL_ES_API);
-    eglGetConfigs(display, NULL, 0, &count);
-    configs = malloc(count * sizeof *configs);
-    eglChooseConfig(display, attributes, configs, count, &num_config);
-    config_index = match_config_to_visual(display, GBM_FORMAT_XRGB8888, configs, num_config);
-    context = eglCreateContext(display, configs[config_index], EGL_NO_CONTEXT, context_attribs);
-    egl_surface = eglCreateWindowSurface(display, configs[config_index], gbm_surface, NULL);
+    eglGetConfigs(eglDisplay, NULL, 0, &count);
+    configs = (EGLConfig*)malloc(count * sizeof(*configs));
+    eglChooseConfig(eglDisplay, attributes, configs, count, &num_config);
+    config_index = match_config_to_visual(eglDisplay, GBM_FORMAT_XRGB8888, configs, num_config);
+    context = eglCreateContext(eglDisplay, configs[config_index], EGL_NO_CONTEXT, context_attribs);
+    eglSurface = eglCreateWindowSurface(eglDisplay, configs[config_index], gbmSurface, NULL);
     free(configs);
-    eglMakeCurrent(display, egl_surface, egl_surface, context);
+    eglMakeCurrent(eglDisplay, eglSurface, eglSurface, context);
     printf("%s \n", glGetString(GL_RENDERER));
     printf("%s \n", glGetString(GL_VERSION));
 
@@ -204,23 +216,25 @@ int main()
 
     Render(m);
 
-    //sleep(10);
+    sleep(10);
 
-    drmModeSetCrtc(device, crtc->crtc_id, crtc->buffer_id, crtc->x, crtc->y, &connector_id, 1, &crtc->mode);
+    drmModeSetCrtc(drmDeviceFd, crtc->crtc_id, crtc->buffer_id, crtc->x, crtc->y, &connectorId, 1, &crtc->mode);
     drmModeFreeCrtc(crtc);
 
     if (previous_bo)
     {
-        drmModeRmFB(device, previous_fb);
-        gbm_surface_release_buffer(gbm_surface, previous_bo);
+        drmModeRmFB(drmDeviceFd, previous_fb);
+        gbm_surface_release_buffer(gbmSurface, previous_bo);
     }
 
-    eglDestroySurface(display, egl_surface);
-    gbm_surface_destroy(gbm_surface);
-    eglDestroyContext(display, context);
-    eglTerminate(display);
-    //gbm_device_destroy(gbm_device);
+    eglDestroySurface(eglDisplay, eglSurface);
+    gbm_surface_destroy(gbmSurface);
+    eglDestroyContext(eglDisplay, context);
+    eglTerminate(eglDisplay);
+    //gbm_device_destroy(gbmDevice);
 
-    close(device);
+    close(drmDeviceFd);
+
+*/
     return 0;
 }

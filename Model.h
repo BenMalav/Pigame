@@ -28,7 +28,7 @@ public:
 		ebo[0] = 0;
 	}
 
-	Model(Model&& m) noexcept
+	Model(Model&& m)
 	{
 		delete[] data;
 		delete[] indices;
@@ -50,7 +50,7 @@ public:
 		numIndices = m.numIndices;
 	}
 
-	Model& operator=(Model&& m) noexcept
+	Model& operator=(Model&& m)
 	{
 		delete[] data;
 		delete[] indices;
